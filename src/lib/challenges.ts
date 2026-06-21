@@ -217,6 +217,12 @@ export function pickRandomChallenge(excludeId?: string): Challenge {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+export function pickRandomChallenges(count: number): Challenge[] {
+  return [...CHALLENGES]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, Math.min(count, CHALLENGES.length));
+}
+
 export function computeFilterSteps(challenge: Challenge): FilterStep[] {
   const steps: FilterStep[] = [
     { label: "Starting elements", count: ELEMENTS.length },

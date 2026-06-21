@@ -15,7 +15,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="mt-1.5 text-xs font-medium text-slate-600 sm:text-base">
-            Find the hidden element using clues — can you beat your streak?
+            Answer 10 element questions using clues from the periodic table.
           </p>
         </div>
       </header>

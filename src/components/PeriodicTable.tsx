@@ -12,16 +12,14 @@ interface ElementTileProps {
   element: Element;
   onSelect: (atomicNumber: number) => void;
   disabled?: boolean;
-  success?: boolean;
-  error?: boolean;
+  selected?: boolean;
 }
 
 export function ElementTile({
   element,
   onSelect,
   disabled = false,
-  success = false,
-  error = false,
+  selected = false,
 }: ElementTileProps) {
   const colors = CATEGORY_COLORS[element.category];
 
@@ -35,13 +33,12 @@ export function ElementTile({
         "group relative flex aspect-square min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-lg border-2 px-0.5 py-1 text-center shadow-sm transition-all duration-200 sm:rounded-xl",
         "touch-manipulation select-none",
         "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 focus-visible:ring-offset-1",
-        "active:scale-95 disabled:cursor-not-allowed disabled:opacity-60",
+        "active:scale-95 disabled:cursor-not-allowed",
         colors.bg,
         colors.border,
         colors.text,
         !disabled && colors.hover,
-        success && "animate-success-pulse border-emerald-500 bg-emerald-200",
-        error && "animate-shake border-red-400 bg-red-100",
+        selected && "animate-selected-pop border-orange-400 bg-orange-100 text-blue-950 shadow-lg shadow-orange-200 ring-4 ring-blue-300/70",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -59,8 +56,7 @@ export function ElementTile({
 interface PeriodicTableProps {
   onSelect: (atomicNumber: number) => void;
   disabled?: boolean;
-  successElement?: number | null;
-  errorElement?: number | null;
+  selectedElement?: number | null;
 }
 
 function buildGridCells(): (Element | null)[][] {
@@ -88,8 +84,7 @@ const GRID = buildGridCells();
 export function PeriodicTable({
   onSelect,
   disabled = false,
-  successElement = null,
-  errorElement = null,
+  selectedElement = null,
 }: PeriodicTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -207,8 +202,7 @@ export function PeriodicTable({
                       element={cell}
                       onSelect={onSelect}
                       disabled={disabled}
-                      success={successElement === cell.atomicNumber}
-                      error={errorElement === cell.atomicNumber}
+                      selected={selectedElement === cell.atomicNumber}
                     />
                   );
                 })}

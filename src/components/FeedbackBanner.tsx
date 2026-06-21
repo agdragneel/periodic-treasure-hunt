@@ -25,11 +25,6 @@ export function FeedbackBanner({ type, message }: FeedbackBannerProps) {
       <p className="mt-2 break-words text-sm font-bold leading-snug sm:text-base">
         {message}
       </p>
-      {!isSuccess && (
-        <p className="mt-1 text-xs font-medium leading-snug text-orange-700 sm:text-sm">
-          Tip: tap &ldquo;How We Solved It&rdquo; to narrow down!
-        </p>
-      )}
     </div>
   );
 }

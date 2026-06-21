@@ -5,6 +5,7 @@
 
   --animate-shake: shake 0.5s ease-in-out;
   --animate-success-pulse: success-pulse 0.6s ease-in-out;
+  --animate-selected-pop: selected-pop 0.35s ease-out;
   --animate-slide-up: slide-up 0.4s ease-out;
 
   @keyframes shake {
@@ -37,6 +38,20 @@
     }
   }
 
+  @keyframes selected-pop {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.55);
+    }
+    55% {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 10px rgba(96, 165, 250, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+    }
+  }
   @keyframes slide-up {
     from {
       opacity: 0;

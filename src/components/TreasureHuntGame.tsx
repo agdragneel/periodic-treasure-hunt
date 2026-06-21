@@ -1,80 +1,64 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { computeFilterSteps, pickRandomChallenge } from "@/lib/challenges";
+import { pickRandomChallenges } from "@/lib/challenges";
 import { getElementByNumber } from "@/lib/elements";
-import { pickSuccessMessage, pickWrongMessage } from "@/lib/messages";
-import { DEFAULT_STATS, loadStats, saveStats } from "@/lib/storage";
+import { DEFAULT_STATS, loadStats } from "@/lib/storage";
 import type { Challenge, GameStats } from "@/lib/types";
-import { ComputationalThinkingPanel } from "./ComputationalThinkingPanel";
-import { ConfettiBurst } from "./ConfettiBurst";
-import { FeedbackBanner } from "./FeedbackBanner";
-import { FloatingEmojis } from "./FloatingEmojis";
-import { FunFactCard } from "./FunFactCard";
 import { GameMenu } from "./GameMenu";
 import { MissionCard } from "./MissionCard";
 import { PeriodicTable } from "./PeriodicTable";
-import { ScoreBoard } from "./ScoreBoard";
 import { StartScreen } from "./StartScreen";
 
+const TEST_LENGTH = 10;
 const POINTS_PER_CORRECT = 100;
-const STREAK_BONUS = 25;
 
-type GamePhase = "start" | "playing";
+type GamePhase = "start" | "playing" | "results";
+
+type AnswerRecord = {
+  challenge: Challenge;
+  selectedAnswer: number;
+  correctAnswer: number;
+  isCorrect: boolean;
+};
 
 export function TreasureHuntGame() {
   const [phase, setPhase] = useState<GamePhase>("start");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [stats, setStats] = useState<GameStats>(DEFAULT_STATS);
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error" | null;
-    message: string;
-  }>({ type: null, message: "" });
-  const [successElement, setSuccessElement] = useState<number | null>(null);
-  const [errorElement, setErrorElement] = useState<number | null>(null);
-  const [funFact, setFunFact] = useState<{
-    name: string;
-    text: string;
-  } | null>(null);
+  const [questions, setQuestions] = useState<Challenge[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [savedStats, setSavedStats] = useState<GameStats>(DEFAULT_STATS);
+  const [selectedElement, setSelectedElement] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showSadEmojis, setShowSadEmojis] = useState(false);
-  const [celebrationKey, setCelebrationKey] = useState(0);
 
-  const filterSteps = useMemo(
-    () => (challenge ? computeFilterSteps(challenge) : []),
-    [challenge]
+  const challenge = questions[currentIndex] ?? null;
+  const correctCount = useMemo(
+    () => answers.filter((answer) => answer.isCorrect).length,
+    [answers]
+  );
+  const wrongAnswers = useMemo(
+    () => answers.filter((answer) => !answer.isCorrect),
+    [answers]
   );
 
-  const resetAttempt = useCallback(() => {
-    setFeedback({ type: null, message: "" });
-    setSuccessElement(null);
-    setErrorElement(null);
-    setFunFact(null);
+  const resetQuestionState = useCallback(() => {
+    setSelectedElement(null);
     setLocked(false);
-    setShowConfetti(false);
-    setShowSadEmojis(false);
   }, []);
 
-  const startNewChallenge = useCallback(
-    (excludeId?: string) => {
-      const next = pickRandomChallenge(excludeId);
-      setChallenge(next);
-      resetAttempt();
-    },
-    [resetAttempt]
-  );
+  const startNewGame = useCallback(() => {
+    setQuestions(pickRandomChallenges(TEST_LENGTH));
+    setCurrentIndex(0);
+    setAnswers([]);
+    resetQuestionState();
+    setMenuOpen(false);
+    setPhase("playing");
+  }, [resetQuestionState]);
 
   useEffect(() => {
-    setStats(loadStats());
+    setSavedStats(loadStats());
   }, []);
-
-  useEffect(() => {
-    if (phase === "playing") {
-      saveStats(stats);
-    }
-  }, [stats, phase]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -85,96 +69,125 @@ export function TreasureHuntGame() {
     };
   }, [menuOpen]);
 
-  const handleStartGame = useCallback(() => {
-    setPhase("playing");
-    startNewChallenge();
-  }, [startNewChallenge]);
-
-  const handleRetryMission = useCallback(() => {
-    resetAttempt();
-  }, [resetAttempt]);
-
-  const handleNewMission = useCallback(() => {
-    startNewChallenge(challenge?.id);
-  }, [challenge?.id, startNewChallenge]);
-
   const handleBackToStart = useCallback(() => {
     setPhase("start");
     setMenuOpen(false);
-    resetAttempt();
-    setChallenge(null);
-  }, [resetAttempt]);
+    resetQuestionState();
+    setQuestions([]);
+    setCurrentIndex(0);
+    setAnswers([]);
+  }, [resetQuestionState]);
 
   const handleSelect = useCallback(
     (atomicNumber: number) => {
       if (!challenge || locked || phase !== "playing") return;
 
       const selected = getElementByNumber(atomicNumber);
-      if (!selected) return;
+      const correct = getElementByNumber(challenge.answer);
+      if (!selected || !correct) return;
 
-      if (atomicNumber === challenge.answer) {
-        setLocked(true);
-        setSuccessElement(atomicNumber);
-        setFunFact({ name: selected.name, text: selected.funFact });
-        setCelebrationKey((k) => k + 1);
-        setShowConfetti(true);
-
-        let newStreak = 0;
-        let streakBonus = 0;
-
-        setStats((prev) => {
-          newStreak = prev.currentStreak + 1;
-          streakBonus =
-            newStreak > 1 ? STREAK_BONUS * (newStreak - 1) : 0;
-          return {
-            score: prev.score + POINTS_PER_CORRECT + streakBonus,
-            correctAnswers: prev.correctAnswers + 1,
-            currentStreak: newStreak,
-            bestStreak: Math.max(prev.bestStreak, newStreak),
-          };
-        });
-
-        const bonusText =
-          streakBonus > 0 ? ` (+${streakBonus} streak bonus!)` : "";
-        setFeedback({
-          type: "success",
-          message: `${pickSuccessMessage(newStreak)} You found ${selected.name} (${selected.symbol})! +${POINTS_PER_CORRECT}${bonusText}`,
-        });
-
-        window.setTimeout(() => {
-          setShowConfetti(false);
-          setFunFact(null);
-          startNewChallenge(challenge.id);
-        }, 4000);
-      } else {
-        setErrorElement(atomicNumber);
-        setShowSadEmojis(true);
-        setStats((prev) => ({
-          ...prev,
-          currentStreak: 0,
-        }));
-        setFeedback({
-          type: "error",
-          message: `${pickWrongMessage()} (${selected.name} isn't the treasure.)`,
-        });
-
-        window.setTimeout(() => {
-          setErrorElement(null);
-          setShowSadEmojis(false);
-          setFeedback({ type: null, message: "" });
-        }, 2800);
-      }
+      setSelectedElement(atomicNumber);
+      setLocked(true);
+      setAnswers((prev) => [
+        ...prev,
+        {
+          challenge,
+          selectedAnswer: atomicNumber,
+          correctAnswer: challenge.answer,
+          isCorrect: atomicNumber === challenge.answer,
+        },
+      ]);
     },
-    [challenge, locked, phase, startNewChallenge]
+    [challenge, locked, phase]
   );
+
+  const handleContinue = useCallback(() => {
+    if (!locked) return;
+
+    if (currentIndex >= questions.length - 1) {
+      resetQuestionState();
+      setPhase("results");
+      return;
+    }
+
+    setCurrentIndex((index) => index + 1);
+    resetQuestionState();
+  }, [currentIndex, locked, questions.length, resetQuestionState]);
 
   if (phase === "start") {
     return (
       <StartScreen
-        onStart={handleStartGame}
-        bestStreak={stats.bestStreak}
-        totalCorrect={stats.correctAnswers}
+        onStart={startNewGame}
+        bestStreak={savedStats.bestStreak}
+        totalCorrect={savedStats.correctAnswers}
       />
+    );
+  }
+
+  if (phase === "results") {
+    return (
+      <section className="mx-auto max-w-3xl animate-bounce-in rounded-3xl border-4 border-indigo-200 bg-white p-5 shadow-2xl shadow-indigo-100 sm:p-8">
+        <div className="text-center">
+          <p className="text-sm font-bold uppercase tracking-wide text-indigo-600">
+            Test complete
+          </p>
+          <h2 className="mt-2 text-3xl font-extrabold text-indigo-950 sm:text-5xl">
+            {correctCount} / {questions.length}
+          </h2>
+          <p className="mt-2 text-base font-medium text-slate-600 sm:text-lg">
+            Score: {correctCount * POINTS_PER_CORRECT} points
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+          <h3 className="text-lg font-bold text-slate-900">Answers to review</h3>
+          {wrongAnswers.length === 0 ? (
+            <p className="mt-2 text-sm font-medium text-slate-600">
+              Perfect score. Every answer was correct.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3" role="list">
+              {wrongAnswers.map((answer, index) => {
+                const selected = getElementByNumber(answer.selectedAnswer);
+                const correct = getElementByNumber(answer.correctAnswer);
+                return (
+                  <li
+                    key={`${answer.challenge.id}-${index}`}
+                    className="rounded-2xl bg-white p-3 shadow-sm sm:p-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-700">
+                      Question {answers.indexOf(answer) + 1}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Your answer: {selected?.name ?? "Unknown"} ({selected?.symbol ?? "?"})
+                    </p>
+                    <p className="text-sm font-bold text-indigo-800">
+                      Correct answer: {correct?.name ?? "Unknown"} ({correct?.symbol ?? "?"})
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            onClick={startNewGame}
+            className="min-h-[52px] rounded-2xl bg-indigo-600 px-6 py-3 text-base font-bold text-white shadow-lg shadow-indigo-200 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400"
+          >
+            New Game
+          </button>
+          <button
+            type="button"
+            onClick={handleBackToStart}
+            className="min-h-[52px] rounded-2xl border-2 border-slate-200 bg-white px-6 py-3 text-base font-bold text-slate-700 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400"
+          >
+            Back to Start
+          </button>
+        </div>
+      </section>
     );
   }
 
@@ -188,29 +201,22 @@ export function TreasureHuntGame() {
 
   return (
     <>
-      <ConfettiBurst
-        key={celebrationKey}
-        active={showConfetti}
-        onComplete={() => setShowConfetti(false)}
-      />
-      <FloatingEmojis active={showSadEmojis} />
-
       <GameMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        onRetry={handleRetryMission}
-        onNewMission={handleNewMission}
+        onRestart={startNewGame}
         onBackToStart={handleBackToStart}
       />
 
-      {/* Sticky mobile score bar */}
       <div className="sticky top-0 z-30 -mx-4 mb-4 border-b border-indigo-100 bg-white/95 px-4 py-2.5 backdrop-blur-md sm:static sm:mx-0 sm:mb-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1 sm:hidden">
-            <ScoreBoard stats={stats} compact />
-          </div>
-          <div className="hidden sm:block sm:flex-1">
-            <ScoreBoard stats={stats} />
+          <div className="min-w-0 flex-1 rounded-2xl border border-indigo-100 bg-white px-3 py-2 shadow-sm sm:px-4 sm:py-3">
+            <p className="text-sm font-bold text-indigo-700 sm:text-base">
+              Question {currentIndex + 1} of {questions.length}
+            </p>
+            <p className="text-xs font-medium text-slate-500 sm:text-sm">
+              {answers.length} answered
+            </p>
           </div>
           <button
             type="button"
@@ -219,52 +225,57 @@ export function TreasureHuntGame() {
             aria-haspopup="dialog"
             aria-label="Open game menu"
           >
-            <span aria-hidden="true">☰</span>
             Menu
           </button>
         </div>
       </div>
 
       <div className="space-y-4 pb-24 sm:space-y-6 sm:pb-0">
-        {stats.currentStreak >= 3 && !locked && (
-          <p className="animate-wiggle text-center text-sm font-bold text-orange-600 sm:text-base">
-            🔥 {stats.currentStreak} streak! Keep it going!
-          </p>
-        )}
-
-        <FeedbackBanner type={feedback.type} message={feedback.message} />
-
-        <FunFactCard
-          elementName={funFact?.name ?? ""}
-          funFact={funFact?.text ?? ""}
-          visible={!!funFact}
-        />
+        <div className="rounded-2xl border border-indigo-100 bg-white/80 px-4 py-3 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-bold text-indigo-700 sm:text-base">
+              Pick one element, then move to the next question.
+            </p>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-200 sm:w-64">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-orange-400 transition-all duration-300"
+                style={{ width: `${((currentIndex + (locked ? 1 : 0)) / questions.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="grid gap-4 lg:grid-cols-[320px_1fr] lg:gap-6 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-4 lg:sticky lg:top-6 lg:space-y-6 lg:self-start">
+          <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <MissionCard challenge={challenge} />
-            <ComputationalThinkingPanel steps={filterSteps} />
+            {locked && (
+              <button
+                type="button"
+                onClick={handleContinue}
+                className="min-h-[52px] w-full rounded-2xl bg-indigo-600 px-5 py-3 text-base font-bold text-white shadow-lg shadow-indigo-200 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400"
+              >
+                {currentIndex >= questions.length - 1 ? "Show Score" : "Next Question"}
+              </button>
+            )}
           </aside>
 
           <main className="min-w-0">
             <PeriodicTable
               onSelect={handleSelect}
               disabled={locked}
-              successElement={successElement}
-              errorElement={errorElement}
+              selectedElement={selectedElement}
             />
           </main>
         </div>
       </div>
 
-      {/* Mobile floating menu button for easy thumb reach */}
       <button
         type="button"
         onClick={() => setMenuOpen(true)}
-        className="fixed bottom-5 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full border-2 border-indigo-300 bg-indigo-600 text-2xl text-white shadow-lg shadow-indigo-400/40 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 sm:hidden pb-safe-offset"
+        className="fixed bottom-5 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full border-2 border-indigo-300 bg-indigo-600 text-sm font-bold text-white shadow-lg shadow-indigo-400/40 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 sm:hidden pb-safe-offset"
         aria-label="Open game menu"
       >
-        <span aria-hidden="true">☰</span>
+        Menu
       </button>
     </>
   );

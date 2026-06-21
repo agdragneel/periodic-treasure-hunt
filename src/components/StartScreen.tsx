@@ -13,10 +13,10 @@ export function StartScreen({ onStart, bestStreak, totalCorrect }: StartScreenPr
         </div>
 
         <h2 className="text-xl font-extrabold text-indigo-950 sm:text-3xl">
-          Ready to Hunt?
+          Ready for the Test?
         </h2>
         <p className="mt-2 text-sm text-slate-600 sm:mt-3 sm:text-lg">
-          Use the clues to find the secret element on the periodic table!
+          Answer 10 element questions using the periodic table clues.
         </p>
 
         <ul className="mt-5 space-y-2 text-left text-sm text-slate-700 sm:mt-6 sm:text-base">
@@ -24,7 +24,7 @@ export function StartScreen({ onStart, bestStreak, totalCorrect }: StartScreenPr
             <span className="shrink-0" aria-hidden="true">
               🎯
             </span>
-            Read the mission clues carefully
+            Read each question carefully
           </li>
           <li className="flex items-center gap-2 rounded-xl bg-white/70 px-3 py-2.5">
             <span className="shrink-0" aria-hidden="true">
@@ -42,7 +42,7 @@ export function StartScreen({ onStart, bestStreak, totalCorrect }: StartScreenPr
             <span className="shrink-0" aria-hidden="true">
               🔥
             </span>
-            Build a streak for bonus points!
+            Finish all 10 questions to see your score
           </li>
         </ul>
 
@@ -57,7 +57,7 @@ export function StartScreen({ onStart, bestStreak, totalCorrect }: StartScreenPr
           onClick={onStart}
           className="animate-wiggle mt-6 min-h-[52px] w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 text-lg font-bold text-white shadow-lg shadow-indigo-300/50 touch-manipulation active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 sm:mt-8 sm:text-xl"
         >
-          🚀 Start Game!
+          🚀 Start Test
         </button>
       </div>
     </div>

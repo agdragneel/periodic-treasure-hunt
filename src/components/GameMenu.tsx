@@ -1,16 +1,14 @@
 interface GameMenuProps {
   open: boolean;
   onClose: () => void;
-  onRetry: () => void;
-  onNewMission: () => void;
+  onRestart: () => void;
   onBackToStart: () => void;
 }
 
 export function GameMenu({
   open,
   onClose,
-  onRetry,
-  onNewMission,
+  onRestart,
   onBackToStart,
 }: GameMenuProps) {
   if (!open) return null;
@@ -24,7 +22,6 @@ export function GameMenu({
         onClick={onClose}
       />
 
-      {/* Mobile: bottom sheet · Desktop: centered dialog */}
       <div
         role="dialog"
         aria-modal="true"
@@ -40,35 +37,24 @@ export function GameMenu({
           id="game-menu-title"
           className="mb-1 text-center text-xl font-bold text-indigo-950"
         >
-          🎮 Game Menu
+          Test Menu
         </h2>
         <p className="mb-5 text-center text-sm text-slate-500">
-          What would you like to do?
+          Choose where to go next.
         </p>
 
         <div className="space-y-3">
           <MenuButton
-            emoji="🔄"
-            label="Retry Mission"
-            description="Same clues — try again!"
+            label="Restart Test"
+            description="Start a fresh set of questions"
             onClick={() => {
-              onRetry();
+              onRestart();
               onClose();
             }}
           />
           <MenuButton
-            emoji="🎯"
-            label="New Mission"
-            description="Get fresh clues"
-            onClick={() => {
-              onNewMission();
-              onClose();
-            }}
-          />
-          <MenuButton
-            emoji="🏠"
             label="Back to Start"
-            description="Return to home screen"
+            description="Return to the home screen"
             onClick={() => {
               onBackToStart();
               onClose();
@@ -82,7 +68,7 @@ export function GameMenu({
           onClick={onClose}
           className="mt-4 w-full min-h-[44px] rounded-xl py-3 text-sm font-semibold text-slate-500 touch-manipulation active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
         >
-          Keep Playing
+          Continue Test
         </button>
       </div>
     </>
@@ -90,13 +76,11 @@ export function GameMenu({
 }
 
 function MenuButton({
-  emoji,
   label,
   description,
   onClick,
   variant = "default",
 }: {
-  emoji: string;
   label: string;
   description: string;
   onClick: () => void;
@@ -107,15 +91,12 @@ function MenuButton({
       type="button"
       onClick={onClick}
       className={[
-        "flex min-h-[56px] w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left touch-manipulation transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400",
+        "flex min-h-[56px] w-full items-center rounded-2xl border-2 px-4 py-3 text-left touch-manipulation transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400",
         variant === "default"
           ? "border-indigo-100 bg-indigo-50 active:bg-indigo-100"
           : "border-slate-200 bg-slate-50 active:bg-slate-100",
       ].join(" ")}
     >
-      <span className="text-2xl" aria-hidden="true">
-        {emoji}
-      </span>
       <span>
         <span className="block font-bold text-slate-800">{label}</span>
         <span className="block text-xs text-slate-500">{description}</span>

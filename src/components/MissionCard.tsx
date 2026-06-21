@@ -15,11 +15,11 @@ export function MissionCard({ challenge }: MissionCardProps) {
           🎯
         </span>
         <h2 id="mission-title" className="text-lg font-bold text-indigo-900 sm:text-xl">
-          Your Mission
+          Question
         </h2>
       </div>
       <p className="mb-4 text-sm font-medium text-slate-600 sm:text-base">
-        Find an element that:
+        Choose the element that:
       </p>
       <ul className="space-y-2.5" role="list">
         {challenge.clues.map((clue) => (
